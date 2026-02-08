@@ -243,15 +243,24 @@ export class Renderer {
     private drawSprite(sprite: Sprite, scale: number, destX: number, destY: number, clipY: number) {
         // Scale adjustment for 128x128 source assets mostly, but let's check sprite type
         let asset: HTMLCanvasElement;
+        let scaleFactor = 1/80; // Default size adjustment
+
         if (sprite.type === SpriteType.TREE) {
             asset = Assets.tree;
         } else if (sprite.type === SpriteType.SIGN) {
             asset = Assets.sign;
+            scaleFactor = 1/60; // Slightly larger
+        } else if (sprite.type === SpriteType.POLE) {
+            asset = Assets.pole;
+            scaleFactor = 1/40; // Taller
+        } else if (sprite.type === SpriteType.BUSH) {
+            asset = Assets.bush;
+            scaleFactor = 1/100; // Smaller
         } else {
             return;
         }
 
-        const spriteScale = scale * 1000 * (1/80); // Adjust this factor to look right
+        const spriteScale = scale * 1000 * scaleFactor;
         const w = asset.width * spriteScale;
         const h = asset.height * spriteScale;
 
@@ -273,13 +282,34 @@ export class Renderer {
 
     private drawRider(rider: Opponent, scale: number, destX: number, destY: number, clipY: number) {
         let asset = Assets.opponentIdle;
+
+        // Select color variant
+        if (rider.colorVariant === 1) { // Green
+             if (rider.state === OpponentState.Cruising) {
+                  if (rider.lean < -0.1) asset = Assets.opponentGreenLeft;
+                  else if (rider.lean > 0.1) asset = Assets.opponentGreenRight;
+                  else asset = Assets.opponentGreenIdle;
+             }
+        } else if (rider.colorVariant === 2) { // Yellow
+             if (rider.state === OpponentState.Cruising) {
+                  if (rider.lean < -0.1) asset = Assets.opponentYellowLeft;
+                  else if (rider.lean > 0.1) asset = Assets.opponentYellowRight;
+                  else asset = Assets.opponentYellowIdle;
+             }
+        } else { // Blue (Default)
+             if (rider.state === OpponentState.Cruising) {
+                  if (rider.lean < -0.1) asset = Assets.opponentLeft;
+                  else if (rider.lean > 0.1) asset = Assets.opponentRight;
+                  else asset = Assets.opponentIdle;
+             }
+        }
+
+        // Action Overrides (Assume generic blue/colorless for actions for now, or update Assets for colored actions)
+        // For simplicity, keeping actions as Blue (default) to save massive asset generation, or maybe just Tint?
+        // Let's just use the Blue action sprites for all, they move fast.
         if (rider.state === OpponentState.Punching) asset = Assets.opponentPunch;
         else if (rider.state === OpponentState.Kicking) asset = Assets.opponentKick;
         else if (rider.state === OpponentState.WipeOut) asset = Assets.opponentWipeout;
-        else {
-            if (rider.lean < -0.1) asset = Assets.opponentLeft;
-            else if (rider.lean > 0.1) asset = Assets.opponentRight;
-        }
 
         const spriteScale = scale * 1000 * (1/80);
         const w = asset.width * spriteScale;

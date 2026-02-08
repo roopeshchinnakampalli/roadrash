@@ -140,22 +140,29 @@ export class Road {
             // Trees - Dense, lining the road
             if (n % 2 === 0) { // Every other segment
                 const side = n % 4 === 0 ? 1 : -1; // Alternate sides
-                const offset = side * (1.5 + Math.random() * 3.0);
+                const offset = side * (2.0 + Math.random() * 3.0);
                 this.segments[n].sprites.push({ type: SpriteType.TREE, offset: offset });
             }
 
+            // Poles - Regular intervals, very close to road
+            if (n % 3 === 0) {
+                 const side = -1; // Always left for utility lines? or alternate? Let's keep left.
+                 const offset = side * 1.1; // Close to road
+                 this.segments[n].sprites.push({ type: SpriteType.POLE, offset: offset });
+            }
+
             // Signs - On curves or hills
-            if (Math.abs(curve) > 1 && n % 5 === 0) {
-                 const side = curve > 0 ? -1 : 1; // Arrows pointing turn direction usually on outside? Or inside? Let's just put on side.
+            if (Math.abs(curve) > 1 && n % 10 === 0) {
+                 const side = curve > 0 ? -1 : 1;
                  const offset = side * 1.3;
                  this.segments[n].sprites.push({ type: SpriteType.SIGN, offset: offset });
             }
 
-            // Random clutter
-            if (Math.random() > 0.9) {
+            // Bushes - Random low clutter
+            if (Math.random() > 0.8) {
                  const side = Math.random() > 0.5 ? 1 : -1;
-                 const offset = side * (2.0 + Math.random() * 5.0);
-                 this.segments[n].sprites.push({ type: SpriteType.TREE, offset: offset });
+                 const offset = side * (1.3 + Math.random());
+                 this.segments[n].sprites.push({ type: SpriteType.BUSH, offset: offset });
             }
         }
     }

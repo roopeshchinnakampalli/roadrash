@@ -16,8 +16,16 @@ export class Assets {
     public static opponentPunch: HTMLCanvasElement;
     public static opponentKick: HTMLCanvasElement;
     public static opponentWipeout: HTMLCanvasElement;
+    public static opponentGreenIdle: HTMLCanvasElement;
+    public static opponentGreenLeft: HTMLCanvasElement;
+    public static opponentGreenRight: HTMLCanvasElement;
+    public static opponentYellowIdle: HTMLCanvasElement;
+    public static opponentYellowLeft: HTMLCanvasElement;
+    public static opponentYellowRight: HTMLCanvasElement;
     public static roadPatternLight: HTMLCanvasElement;
     public static roadPatternDark: HTMLCanvasElement;
+    public static pole: HTMLCanvasElement;
+    public static bush: HTMLCanvasElement;
 
     public static init() {
         this.backgroundSky = this.generateSky();
@@ -25,6 +33,8 @@ export class Assets {
         this.backgroundTrees = this.generateDistantTrees();
         this.tree = this.generateTree();
         this.sign = this.generateSign();
+        this.pole = this.generatePole();
+        this.bush = this.generateBush();
         this.roadPatternLight = this.generateRoadPattern('#707070', '#757575');
         this.roadPatternDark = this.generateRoadPattern('#696969', '#646464');
 
@@ -43,6 +53,15 @@ export class Assets {
         this.opponentPunch = this.generateRiderAction('#0000ff', 'punch');
         this.opponentKick = this.generateRiderAction('#0000ff', 'kick');
         this.opponentWipeout = this.generateWipeout('#0000ff');
+
+        // Opponent variants (for variety)
+        this.opponentGreenIdle = this.generateRider('#008800', 0);
+        this.opponentGreenLeft = this.generateRider('#008800', -1);
+        this.opponentGreenRight = this.generateRider('#008800', 1);
+
+        this.opponentYellowIdle = this.generateRider('#CCCC00', 0);
+        this.opponentYellowLeft = this.generateRider('#CCCC00', -1);
+        this.opponentYellowRight = this.generateRider('#CCCC00', 1);
     }
 
     private static createContext(width: number, height: number): { canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D } {
@@ -148,6 +167,45 @@ export class Assets {
         ctx.lineTo(30, 80);
         ctx.lineTo(98, 80);
         ctx.fill();
+
+        return canvas;
+    }
+
+    private static generatePole(): HTMLCanvasElement {
+        const { canvas, ctx } = this.createContext(32, 256); // Tall
+
+        // Pole
+        ctx.fillStyle = '#8d6e63'; // Wood color
+        ctx.fillRect(12, 0, 8, 256);
+
+        // Crossbar
+        ctx.fillStyle = '#6d4c41';
+        ctx.fillRect(2, 20, 28, 6);
+
+        // Insulators
+        ctx.fillStyle = '#eee';
+        ctx.beginPath(); ctx.arc(6, 18, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(26, 18, 3, 0, Math.PI*2); ctx.fill();
+
+        return canvas;
+    }
+
+    private static generateBush(): HTMLCanvasElement {
+        const { canvas, ctx } = this.createContext(64, 64);
+
+        // Leaves
+        ctx.fillStyle = '#33691e';
+        ctx.beginPath();
+        ctx.arc(32, 48, 16, 0, Math.PI*2);
+        ctx.arc(20, 48, 12, 0, Math.PI*2);
+        ctx.arc(44, 48, 12, 0, Math.PI*2);
+        ctx.arc(32, 32, 14, 0, Math.PI*2);
+        ctx.fill();
+
+        // Berries/Detail
+        ctx.fillStyle = '#7cb342';
+        ctx.beginPath(); ctx.arc(32, 40, 4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(20, 50, 3, 0, Math.PI*2); ctx.fill();
 
         return canvas;
     }

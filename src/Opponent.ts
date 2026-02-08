@@ -17,6 +17,7 @@ export class Opponent {
     public lean: number = 0; // -1 to 1
     public width: number = 0.5; // Visual width
     public normalizedWidth: number = 0.05;
+    public colorVariant: number = 0; // 0: Blue, 1: Green, 2: Yellow
 
     public segmentIndex: number = 0;
 
@@ -29,6 +30,7 @@ export class Opponent {
         this.z = z;
         this.maxSpeed = maxSpeed;
         this.speed = maxSpeed * 0.9;
+        this.colorVariant = Math.floor(Math.random() * 3);
     }
 
     public update(dt: number, playerZ: number, playerX: number, playerSpeed: number, trackLength: number) {

@@ -1,6 +1,8 @@
 export enum SpriteType {
     TREE = 'TREE',
-    SIGN = 'SIGN'
+    SIGN = 'SIGN',
+    POLE = 'POLE',
+    BUSH = 'BUSH'
 }
 
 export interface Sprite {
