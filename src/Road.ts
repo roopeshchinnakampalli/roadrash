@@ -1,4 +1,5 @@
 import { SEGMENT_LENGTH, COLORS, ROAD_WIDTH } from './Constants';
+import { Sprite, SpriteType } from './Sprite';
 
 export interface Point {
     world: { x: number; y: number; z: number };
@@ -13,6 +14,7 @@ export interface Segment {
     color: { road: string, grass: string, rumble: string, lane?: string };
     curve: number;
     clip: number;
+    sprites: Sprite[];
 }
 
 export class Road {
@@ -39,6 +41,8 @@ export class Road {
         this.addBumps();
         this.addLowRollingHills();
         this.addDownhillToEnd();
+
+        this.addSprites();
     }
 
     private addSegment(curve: number, y: number) {
@@ -49,7 +53,8 @@ export class Road {
             p2: { world: { x: 0, y: y, z: (n + 1) * this.segmentLength }, camera: { x: 0, y: 0, z: 0 }, screen: { x: 0, y: 0, w: 0, scale: 0 } },
             color: Math.floor(n / this.rumbleLength) % 2 ? COLORS.DARK : COLORS.LIGHT,
             curve: curve,
-            clip: 0
+            clip: 0,
+            sprites: []
         });
     }
 
@@ -117,6 +122,21 @@ export class Road {
 
     public getSegment(z: number): Segment {
         return this.segments[Math.floor(z / this.segmentLength) % this.segments.length];
+    }
+
+    private addSprites() {
+        for (let n = 10; n < this.segments.length - 50; n += 5) { // Skip start and end
+            if (Math.random() > 0.6) {
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const offset = side * (1.2 + Math.random() * 2); // Place randomly to the side
+                this.segments[n].sprites.push({ type: Math.random() > 0.5 ? SpriteType.TREE : SpriteType.SIGN, offset: offset });
+            }
+             // Occasionally place one on the road as an obstacle
+            if (Math.random() > 0.95) {
+                const offset = (Math.random() * 2 - 1) * 0.8; // On road (-0.8 to 0.8)
+                this.segments[n].sprites.push({ type: SpriteType.SIGN, offset: offset });
+            }
+        }
     }
 
     private easeIn(a: number, b: number, percent: number) { return a + (b - a) * Math.pow(percent, 2); }

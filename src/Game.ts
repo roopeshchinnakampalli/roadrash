@@ -1,6 +1,7 @@
 import { Road } from './Road';
 import { Input } from './Input';
 import { Renderer } from './Renderer';
+import { Player, PlayerState } from './Player';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, FPS, STEP, CAMERA_HEIGHT, CAMERA_DEPTH, PLAYER_Z, SEGMENT_LENGTH, DRAW_DISTANCE } from './Constants';
 
 export class Game {
@@ -8,14 +9,13 @@ export class Game {
     private road: Road;
     private input: Input;
     private renderer: Renderer;
+    private player: Player;
 
     private lastTime: number = 0;
     private dt: number = 0;
     private gdt: number = 0;
 
     private position: number = 0;
-    private playerX: number = 0;
-    private speed: number = 0;
     private maxSpeed: number = SEGMENT_LENGTH / STEP; // Max speed relative to segment length
 
     constructor() {
@@ -26,33 +26,58 @@ export class Game {
         this.road = new Road();
         this.input = new Input();
         this.renderer = new Renderer(this.canvas);
+        this.player = new Player(this.maxSpeed);
 
         this.loop = this.loop.bind(this);
         requestAnimationFrame(this.loop);
     }
 
     private update(dt: number) {
-        this.position = (this.position + this.speed * dt) % (this.road.segments.length * SEGMENT_LENGTH);
-
+        // Player update logic now handled by Player class
         const playerSegment = this.road.getSegment(this.position + PLAYER_Z);
-        const speedPercent = this.speed / this.maxSpeed;
-        const dx = dt * 2 * speedPercent; // lateral speed
 
-        if (this.input.isKeyDown('ArrowLeft'))
-            this.playerX = this.playerX - dx;
-        else if (this.input.isKeyDown('ArrowRight'))
-            this.playerX = this.playerX + dx;
+        // Pass curve from current segment
+        this.player.update(dt, this.input, playerSegment.curve);
 
-        this.playerX = this.playerX - (dx * speedPercent * playerSegment.curve * dt); // centrifugal force
+        // Check for collision
+        this.checkCollision(playerSegment);
 
-        if (this.input.isKeyDown('ArrowUp'))
-            this.speed = this.speed + (dt * 1000); // acceleration
-        else if (this.input.isKeyDown('ArrowDown'))
-            this.speed = this.speed - (dt * 2000); // braking
-        else
-            this.speed = this.speed - (dt * 500); // friction
+        // Update global position based on player speed
+        this.position = (this.position + this.player.speed * dt) % (this.road.segments.length * SEGMENT_LENGTH);
+    }
 
-        this.speed = Math.max(0, Math.min(this.speed, this.maxSpeed));
+    private checkCollision(segment: any) {
+        if (this.player.state === PlayerState.WipeOut) return;
+
+        // Loop through sprites on the current segment
+        for (const sprite of segment.sprites) {
+            // Only collide if player is also near the road edge for trees/signs?
+            // Actually, sprites have an offset.
+
+            const spriteW = 0.05;
+            const playerW = this.player.normalizedWidth;
+
+            // Check overlap
+            if (this.overlap(this.player.x, playerW, sprite.offset, spriteW)) {
+                // Ensure we only wipe out if moving fast enough? Or just always.
+                if (this.player.speed > 500) {
+                     this.player.triggerWipeOut();
+                } else {
+                     // Just stop?
+                     this.player.speed = 0;
+                }
+            }
+        }
+    }
+
+    private overlap(x1: number, w1: number, x2: number, w2: number) {
+        const half1 = w1 / 2;
+        const half2 = w2 / 2;
+        const min1 = x1 - half1;
+        const max1 = x1 + half1;
+        const min2 = x2 - half2;
+        const max2 = x2 + half2;
+        return max1 >= min2 && min1 <= max2;
     }
 
     private loop(time: number) {
@@ -66,7 +91,7 @@ export class Game {
             this.update(STEP);
         }
 
-        this.renderer.render(this.road, this.playerX * this.road.roadWidth, CAMERA_HEIGHT + this.road.getSegment(this.position).p1.world.y, this.position, this.playerX, DRAW_DISTANCE);
+        this.renderer.render(this.road, this.player, CAMERA_HEIGHT + this.road.getSegment(this.position).p1.world.y, this.position, DRAW_DISTANCE);
 
         requestAnimationFrame(this.loop);
     }
