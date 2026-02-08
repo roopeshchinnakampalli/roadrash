@@ -1,5 +1,6 @@
 import { SEGMENT_LENGTH, COLORS, ROAD_WIDTH } from './Constants';
 import { Sprite, SpriteType } from './Sprite';
+import { Opponent } from './Opponent';
 
 export interface Point {
     world: { x: number; y: number; z: number };
@@ -15,6 +16,7 @@ export interface Segment {
     curve: number;
     clip: number;
     sprites: Sprite[];
+    riders: Opponent[];
 }
 
 export class Road {
@@ -45,6 +47,12 @@ export class Road {
         this.addSprites();
     }
 
+    public clearRiders() {
+        for (const segment of this.segments) {
+            segment.riders = [];
+        }
+    }
+
     private addSegment(curve: number, y: number) {
         const n = this.segments.length;
         this.segments.push({
@@ -54,7 +62,8 @@ export class Road {
             color: Math.floor(n / this.rumbleLength) % 2 ? COLORS.DARK : COLORS.LIGHT,
             curve: curve,
             clip: 0,
-            sprites: []
+            sprites: [],
+            riders: []
         });
     }
 
