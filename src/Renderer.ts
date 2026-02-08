@@ -9,6 +9,8 @@ export class Renderer {
     private ctx: CanvasRenderingContext2D;
     private width: number;
     private height: number;
+    private roadPatternLight: CanvasPattern | null = null;
+    private roadPatternDark: CanvasPattern | null = null;
 
     constructor(canvas: HTMLCanvasElement) {
         this.ctx = canvas.getContext('2d')!;
@@ -66,6 +68,14 @@ export class Renderer {
     }
 
     public render(road: Road, player: Player, cameraY: number, cameraZ: number, drawDistance: number, finished: boolean) {
+        // Initialize patterns once if needed
+        if (!this.roadPatternLight && Assets.roadPatternLight) {
+            this.roadPatternLight = this.ctx.createPattern(Assets.roadPatternLight, 'repeat');
+        }
+        if (!this.roadPatternDark && Assets.roadPatternDark) {
+            this.roadPatternDark = this.ctx.createPattern(Assets.roadPatternDark, 'repeat');
+        }
+
         this.clear(player, road, cameraZ);
 
         const baseSegment = road.getSegment(cameraZ);
@@ -316,7 +326,23 @@ export class Renderer {
 
         this.drawPolygon(ctx, x1 - w1 - r1, y1, x1 - w1, y1, x2 - w2, y2, x2 - w2 - r2, y2, color.rumble);
         this.drawPolygon(ctx, x1 + w1 + r1, y1, x1 + w1, y1, x2 + w2, y2, x2 + w2 + r2, y2, color.rumble);
-        this.drawPolygon(ctx, x1 - w1, y1, x1 + w1, y1, x2 + w2, y2, x2 - w2, y2, color.road);
+
+        // Textured Road
+        if (this.roadPatternLight && color.road === COLORS.LIGHT.road) {
+            ctx.fillStyle = this.roadPatternLight;
+        } else if (this.roadPatternDark && color.road === COLORS.DARK.road) {
+            ctx.fillStyle = this.roadPatternDark;
+        } else {
+            ctx.fillStyle = color.road;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(x1 - w1, y1);
+        ctx.lineTo(x1 + w1, y1);
+        ctx.lineTo(x2 + w2, y2);
+        ctx.lineTo(x2 - w2, y2);
+        ctx.closePath();
+        ctx.fill();
 
         if (color.lane) {
             const laneW1 = w1 * 2 / lanes;
