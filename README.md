@@ -52,24 +52,24 @@ This will generate a `dist` folder with the bundled application.
 
 ## How to Play
 
+
+
 -   **Accelerate:** Up Arrow
+
 -   **Brake:** Down Arrow
+
 -   **Steer Left:** Left Arrow
+
 -   **Steer Right:** Right Arrow
+
 -   **Punch:** A
+
 -   **Kick:** S
 
-## Deployment
 
-This project can be easily deployed to static web hosting services like Vercel or Netlify.
-
-### Vercel
-
--   **Framework Preset:** `Other`
--   **Build Command:** `npm run build`
--   **Output Directory:** `dist`
--   **Install Command:** `npm install`
 
 ## Contributing
+
+
 
 Contributions are welcome! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request.
