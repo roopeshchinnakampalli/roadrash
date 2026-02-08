@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Rash 3D - Racing Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="container">
+        
+        <div id="startScreen" class="screen">
+            <div class="screen-content">
+                <h1>ROAD RASH 3D</h1>
+                <p class="subtitle">High-Speed Motorcycle Racing</p>
+                <div class="instructions">
+                    <h3>How to Play</h3>
+                    <p>↑ Accelerate   ↓ Brake</p>
+                    <p>← Change Left   → Change Right</p>
+                    <p>Z Punch Left   X Punch Right</p>
+                    <p style="margin-top: 15px; font-size: 13px; color: #999999;">Finish in the TOP 3 to WIN!</p>
+                </div>
+                <button id="startButton">START RACE</button>
+            </div>
+        </div>
+        
+        <div id="gameOverScreen" class="screen hidden">
+            <div class="screen-content">
+                <h1 id="gameOverTitle">RACE OVER</h1>
+                <div id="gameOverStats">
+                    <p><strong>Final Position:</strong> <span id="finalPosition">0</span>/8</p>
+                    <p><strong>Race Time:</strong> <span id="finalTime">00:00</span></p>
+                </div>
+                <p id="gameOverMessage" class="message">Race completed!</p>
+                <button id="restartButton">RACE AGAIN</button>
+            </div>
+        </div>
+        
+        <div id="hud" style="position: absolute; top: 20px; left: 20px; color: white; font-family: monospace; font-size: 14px; background: rgba(0,0,0,0.5); padding: 15px; border: 2px solid #00FF00; display: none;">
+            <div>Position: <span id="positionValue">1/8</span></div>
+            <div>Speed: <span id="speedValue">0 mph</span></div>
+            <div>Health: <span id="healthValue">100%</span></div>
+            <div>Distance: <span id="distanceValue">0m</span></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
