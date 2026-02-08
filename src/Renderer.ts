@@ -1,8 +1,9 @@
 import { Road, Segment, Point } from './Road';
-import { Player } from './Player';
+import { Player, PlayerState } from './Player';
 import { Opponent, OpponentState } from './Opponent';
 import { CAMERA_DEPTH, SCREEN_WIDTH, SCREEN_HEIGHT, ROAD_WIDTH, COLORS, SEGMENT_LENGTH } from './Constants';
 import { Sprite, SpriteType } from './Sprite';
+import { Assets } from './Assets';
 
 export class Renderer {
     private ctx: CanvasRenderingContext2D;
@@ -15,14 +16,36 @@ export class Renderer {
         this.height = canvas.height;
     }
 
-    public clear() {
+    public clear(player: Player, road: Road, cameraZ: number) {
         this.ctx.clearRect(0, 0, this.width, this.height);
-        // Draw sky
-        this.ctx.fillStyle = COLORS.SKY;
-        this.ctx.fillRect(0, 0, this.width, this.height);
-        // Draw fog/distant terrain
-        this.ctx.fillStyle = COLORS.FOG;
-        this.ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
+        this.drawBackground(player, road, cameraZ);
+    }
+
+    private drawBackground(player: Player, road: Road, cameraZ: number) {
+        const width = this.width;
+        const height = this.height;
+
+        const playerOffset = player.x * width * 0.5;
+        const curveOffset = road.getSegment(cameraZ).curve * 2000;
+
+        const drawLayer = (layer: HTMLCanvasElement, scrollSpeed: number) => {
+             const scrollX = (curveOffset + playerOffset) * scrollSpeed;
+             const bgWidth = layer.width;
+
+             let offsetX = scrollX % bgWidth;
+             if (offsetX < 0) offsetX += bgWidth;
+
+             this.ctx.drawImage(layer, -offsetX, 0, bgWidth, height);
+             this.ctx.drawImage(layer, bgWidth - offsetX, 0, bgWidth, height);
+             if (bgWidth - offsetX < width) {
+                  this.ctx.drawImage(layer, bgWidth * 2 - offsetX, 0, bgWidth, height);
+             }
+        };
+
+        // Draw layers back to front
+        drawLayer(Assets.backgroundSky, 0.001); // Sky moves very slowly
+        drawLayer(Assets.backgroundHills, 0.02); // Distant hills move slower
+        drawLayer(Assets.backgroundTrees, 0.06); // Closer trees move faster
     }
 
     public project(p: Point, cameraX: number, cameraY: number, cameraZ: number, cameraDepth: number, width: number, height: number, roadWidth: number) {
@@ -43,7 +66,7 @@ export class Renderer {
     }
 
     public render(road: Road, player: Player, cameraY: number, cameraZ: number, drawDistance: number, finished: boolean) {
-        this.clear();
+        this.clear(player, road, cameraZ);
 
         const baseSegment = road.getSegment(cameraZ);
         const baseIndex = baseSegment.index;
@@ -146,54 +169,105 @@ export class Renderer {
     }
 
     private renderHUD(player: Player, finished: boolean) {
-        this.ctx.fillStyle = 'black';
-        this.ctx.fillRect(10, 10, 200, 60);
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeStyle = 'white';
-        this.ctx.strokeRect(10, 10, 200, 60);
+        // Retro HUD
+        this.ctx.save();
 
-        this.ctx.fillStyle = 'white';
-        this.ctx.font = '20px Arial';
-        this.ctx.fillText(`Speed: ${Math.floor(player.speed / 100)} km/h`, 20, 35);
+        // Speedometer bg
+        this.ctx.fillStyle = '#222';
+        this.ctx.strokeStyle = '#eee';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(60, this.height - 60, 50, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
 
-        this.ctx.fillText("Health:", 20, 60);
-        this.ctx.fillStyle = 'red';
-        this.ctx.fillRect(90, 45, 100, 15);
-        this.ctx.fillStyle = 'green';
-        this.ctx.fillRect(90, 45, (player.health / player.maxHealth) * 100, 15);
+        // Speed Text
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = 'bold 24px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        const speedKmh = Math.floor(player.speed / 100);
+        this.ctx.fillText(`${speedKmh}`, 60, this.height - 60);
+        this.ctx.font = '12px monospace';
+        this.ctx.fillText(`KM/H`, 60, this.height - 40);
 
+        // Health Bar
+        this.ctx.fillStyle = '#222';
+        this.ctx.fillRect(120, this.height - 40, 200, 20);
+        this.ctx.fillStyle = '#d32f2f'; // Red
+        const healthPct = Math.max(0, player.health / player.maxHealth);
+        this.ctx.fillRect(122, this.height - 38, 196 * healthPct, 16);
+        this.ctx.strokeStyle = '#eee';
+        this.ctx.strokeRect(120, this.height - 40, 200, 20);
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = 'bold 14px monospace';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText("BIKE", 125, this.height - 45);
+
+        // Finish overlay
         if (finished) {
             this.ctx.fillStyle = 'rgba(0,0,0,0.7)';
             this.ctx.fillRect(0, this.height/2 - 50, this.width, 100);
-            this.ctx.fillStyle = 'yellow';
-            this.ctx.font = '40px Arial';
+            this.ctx.fillStyle = '#ffd700'; // Gold
+            this.ctx.font = 'bold 60px monospace';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText("FINISH!", this.width/2, this.height/2 + 10);
+            this.ctx.textBaseline = 'middle';
+            this.ctx.shadowColor = 'black';
+            this.ctx.shadowBlur = 10;
+            this.ctx.fillText("FINISH!", this.width/2, this.height/2);
+            this.ctx.shadowBlur = 0;
             this.ctx.textAlign = 'left';
         }
+
+        this.ctx.restore();
     }
 
     private drawSprite(sprite: Sprite, scale: number, destX: number, destY: number, clipY: number) {
-        const spriteWidth = 64 * scale * 50;
-        const spriteHeight = 64 * scale * 50;
-        const top = destY - spriteHeight;
+        // Scale adjustment for 128x128 source assets mostly, but let's check sprite type
+        let asset: HTMLCanvasElement;
+        if (sprite.type === SpriteType.TREE) {
+            asset = Assets.tree;
+        } else if (sprite.type === SpriteType.SIGN) {
+            asset = Assets.sign;
+        } else {
+            return;
+        }
 
-        if (destY < 0 || top > this.height) return;
+        const spriteScale = scale * 1000 * (1/80); // Adjust this factor to look right
+        const w = asset.width * spriteScale;
+        const h = asset.height * spriteScale;
+
+        const destX_ = destX;
+        const destY_ = destY;
+        const top = destY_ - h;
+
+        if (destY_ < 0 || top > this.height) return;
 
         this.ctx.save();
         this.ctx.beginPath();
         this.ctx.rect(0, 0, this.width, clipY);
         this.ctx.clip();
 
-        this.renderSpriteIcon(sprite, destX, destY, spriteWidth, spriteHeight);
+        this.ctx.drawImage(asset, destX_ - w/2, destY_ - h, w, h);
 
         this.ctx.restore();
     }
 
     private drawRider(rider: Opponent, scale: number, destX: number, destY: number, clipY: number) {
-        const width = 64 * scale * 50;
-        const height = 64 * scale * 50;
-        const top = destY - height;
+        let asset = Assets.opponentIdle;
+        if (rider.state === OpponentState.Punching) asset = Assets.opponentPunch;
+        else if (rider.state === OpponentState.Kicking) asset = Assets.opponentKick;
+        else if (rider.state === OpponentState.WipeOut) asset = Assets.opponentWipeout;
+        else {
+            if (rider.lean < -0.1) asset = Assets.opponentLeft;
+            else if (rider.lean > 0.1) asset = Assets.opponentRight;
+        }
+
+        const spriteScale = scale * 1000 * (1/80);
+        const w = asset.width * spriteScale;
+        const h = asset.height * spriteScale;
+
+        const top = destY - h;
 
         if (destY < 0 || top > this.height) return;
 
@@ -202,88 +276,33 @@ export class Renderer {
         this.ctx.rect(0, 0, this.width, clipY);
         this.ctx.clip();
 
-        this.renderRiderShape(destX, destY, width, height, rider);
+        this.ctx.drawImage(asset, destX - w/2, destY - h, w, h);
 
         this.ctx.restore();
     }
 
-    private renderRiderShape(x: number, y: number, w: number, h: number, rider: Opponent) {
-         // Simple bike
-         this.ctx.fillStyle = 'black';
-         this.ctx.fillRect(x - w/4, y - h/5, w/2, h/5); // Wheel
-
-         this.ctx.fillStyle = 'blue'; // Opponent Color
-         this.ctx.fillRect(x - w/2, y - h*0.6, w, h*0.4); // Body
-
-         this.ctx.fillStyle = 'white'; // Helmet
-         this.ctx.beginPath();
-         this.ctx.arc(x, y - h*0.8, w*0.2, 0, Math.PI * 2);
-         this.ctx.fill();
-
-         // State Visuals
-         if (rider.state === OpponentState.Punching) {
-             this.ctx.fillStyle = 'orange';
-             this.ctx.fillRect(x - w*0.6, y - h*0.7, w*0.4, h*0.1); // Punch left
-         } else if (rider.state === OpponentState.Kicking) {
-             this.ctx.fillStyle = 'yellow';
-             this.ctx.fillRect(x - w*0.6, y - h*0.3, w*0.4, h*0.1); // Kick left
-         } else if (rider.state === OpponentState.WipeOut) {
-             this.ctx.fillStyle = 'grey';
-             this.ctx.beginPath();
-             this.ctx.arc(x, y - h/2, w/2, 0, Math.PI * 2);
-             this.ctx.fill();
-         }
-    }
-
-    private renderSpriteIcon(sprite: Sprite, x: number, y: number, w: number, h: number) {
-         if (sprite.type === SpriteType.TREE) {
-             this.ctx.fillStyle = COLORS.TREE;
-             this.ctx.fillRect(x - w/2, y - h, w, h);
-
-             this.ctx.fillStyle = '#654321';
-             this.ctx.fillRect(x - w/8, y - h/2, w/4, h/2);
-             this.ctx.fillStyle = '#005108';
-             this.ctx.beginPath();
-             this.ctx.moveTo(x, y - h);
-             this.ctx.lineTo(x - w/2, y - h/2);
-             this.ctx.lineTo(x + w/2, y - h/2);
-             this.ctx.fill();
-         } else if (sprite.type === SpriteType.SIGN) {
-             this.ctx.fillStyle = 'grey';
-             this.ctx.fillRect(x - w/10, y - h, w/5, h);
-             this.ctx.fillStyle = 'yellow';
-             this.ctx.fillRect(x - w/2, y - h, w, h/3);
-             this.ctx.fillStyle = 'black';
-             this.ctx.font = `${Math.max(10, h/4)}px Arial`;
-             this.ctx.textAlign = 'center';
-             this.ctx.fillText("!", x, y - h*0.75);
-         }
-    }
-
     private renderPlayer(width: number, height: number, destX: number, destY: number, steer: number, player: Player) {
-        this.ctx.fillStyle = 'black';
-        this.ctx.fillRect(destX - 5, destY - 10, 10, 10); // Wheel
+        // Select sprite based on state and input
+        let asset = Assets.playerIdle;
 
-        this.ctx.fillStyle = 'red';
-        this.ctx.fillRect(destX - 10, destY - 30, 20, 20); // Body
-
-        this.ctx.fillStyle = 'yellow';
-        this.ctx.beginPath();
-        this.ctx.arc(destX, destY - 40, 8, 0, Math.PI * 2); // Head
-        this.ctx.fill();
-
-        if (player.state === 'Punching') {
-            this.ctx.fillStyle = 'orange';
-            this.ctx.fillRect(destX + 10, destY - 35, 15, 5);
-        } else if (player.state === 'Kicking') {
-            this.ctx.fillStyle = 'blue';
-            this.ctx.fillRect(destX + 10, destY - 15, 15, 5);
-        } else if (player.state === 'WipeOut') {
-             this.ctx.fillStyle = 'grey';
-             this.ctx.beginPath();
-             this.ctx.arc(destX, destY - 20, 25, 0, Math.PI * 2);
-             this.ctx.fill();
+        if (player.state === PlayerState.WipeOut) {
+            asset = Assets.playerWipeout;
+        } else if (player.state === PlayerState.Punching) {
+            asset = Assets.playerPunch;
+        } else if (player.state === PlayerState.Kicking) {
+            asset = Assets.playerKick;
+        } else {
+             if (player.lean < -0.1) asset = Assets.playerLeft;
+             else if (player.lean > 0.1) asset = Assets.playerRight;
         }
+
+        const scale = 3; // HUD scale
+        const w = asset.width * scale;
+        const h = asset.height * scale;
+
+        // Draw Player at bottom center
+        // destY is height - 20
+        this.ctx.drawImage(asset, destX - w/2, destY - h + 20, w, h);
     }
 
     private drawSegment(ctx: CanvasRenderingContext2D, width: number, lanes: number, x1: number, y1: number, w1: number, x2: number, y2: number, w2: number, color: any) {

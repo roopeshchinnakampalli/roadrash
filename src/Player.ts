@@ -3,7 +3,6 @@ import { SEGMENT_LENGTH, STEP } from './Constants';
 
 export enum PlayerState {
     Cruising = 'Cruising',
-    Leaning = 'Leaning',
     Punching = 'Punching',
     Kicking = 'Kicking',
     WipeOut = 'WipeOut'
@@ -15,11 +14,9 @@ export class Player {
     public speed: number = 0;
     public maxSpeed: number = 0;
     public state: PlayerState = PlayerState.Cruising;
+    public lean: number = 0; // -1 (Left) to 1 (Right)
     public health: number = 100;
     public maxHealth: number = 100;
-    public width: number = 0.5; // Normalized width relative to road? No, relative to segment width?
-                               // Actually, let's keep it simple. Road width is 2000. Player is maybe 80?
-                               // 80 / 2000 = 0.04 normalized width.
     public normalizedWidth: number = 0.05;
 
     private stateTimer: number = 0;
@@ -37,6 +34,14 @@ export class Player {
 
         this.handleInput(dt, input);
         this.applyPhysics(dt, currentCurve);
+
+        // Timer for actions
+        if (this.stateTimer > 0) {
+            this.stateTimer -= dt * 1000;
+            if (this.stateTimer <= 0) {
+                 this.state = PlayerState.Cruising;
+            }
+        }
     }
 
     private handleInput(dt: number, input: Input) {
@@ -46,42 +51,37 @@ export class Player {
 
         if (input.isKeyDown('ArrowLeft')) {
             this.x -= dx;
-            this.state = PlayerState.Leaning;
+            this.lean = Math.max(-1, this.lean - dt * 5);
         } else if (input.isKeyDown('ArrowRight')) {
             this.x += dx;
-            this.state = PlayerState.Leaning;
+            this.lean = Math.min(1, this.lean + dt * 5);
         } else {
-            this.state = PlayerState.Cruising;
+             // Return to 0
+             if (this.lean > 0.05) this.lean -= dt * 5;
+             else if (this.lean < -0.05) this.lean += dt * 5;
+             else this.lean = 0;
         }
 
         // Action states
-        // Use a simple timer or check if key is just pressed for punch/kick?
-        // Since Input only has isKeyDown, we need to handle "just pressed" logic or cooldowns if we want strict animation.
-        // For now, let's just set the state if key is held, but reset quickly.
-        // Better: use a cooldown.
-
-        if (this.stateTimer > 0) {
-            this.stateTimer -= dt * 1000;
-            if (this.stateTimer <= 0) {
-                 this.state = PlayerState.Cruising; // Return to cruising after action
-            }
-        } else {
+        if (this.state === PlayerState.Cruising) {
             if (input.isKeyDown('a') || input.isKeyDown('A')) {
                 this.state = PlayerState.Punching;
                 this.stateTimer = 300; // 300ms punch
+                this.lean = 0; // Reset lean for action? Or keep it? Let's keep it simple.
             } else if (input.isKeyDown('s') || input.isKeyDown('S')) {
                 this.state = PlayerState.Kicking;
                 this.stateTimer = 300; // 300ms kick
+                this.lean = 0;
             }
         }
 
         // Acceleration / Braking
         if (input.isKeyDown('ArrowUp'))
-            this.speed += (dt * 1000);
+            this.speed += (dt * 1000); // 0 to max in roughly... depends on maxSpeed
         else if (input.isKeyDown('ArrowDown'))
             this.speed -= (dt * 2000);
         else
-            this.speed -= (dt * 500);
+            this.speed -= (dt * 500); // Coasting friction
 
         this.speed = Math.max(0, Math.min(this.speed, this.maxSpeed));
     }
@@ -90,27 +90,35 @@ export class Player {
         // Centrifugal force
         const speedPercent = this.speed / this.maxSpeed;
         const dx = dt * 2 * speedPercent;
-        this.x -= (dx * speedPercent * currentCurve);
+
+        // If speed is high, curve pulls player
+        if (speedPercent > 0.2) {
+             this.x -= (dx * speedPercent * currentCurve * 2); // Increased centrifugal force
+        }
 
         // Clamp position to road bounds (or let them go off-road?)
         // If they go off-road, slow down?
-        if ((this.x < -1 || this.x > 1) && (this.speed > this.maxSpeed / 4)) {
-            this.speed -= (dt * 2000); // Slow down significantly off-road
+        if ((this.x < -1 || this.x > 1)) {
+            if (this.speed > this.maxSpeed / 4) {
+                 this.speed -= (dt * 2000); // Slow down significantly off-road
+            }
+            // Shake camera? (Handled in Game.ts or Renderer)
         }
+
+        // Limit x slightly to prevent infinite scrolling off map
+        this.x = Math.max(-2, Math.min(2, this.x));
     }
 
     private handleWipeOut(dt: number) {
-        this.speed -= (dt * 3000); // Rapid deceleration
+        this.speed -= (dt * 1500); // Rapid deceleration
         this.speed = Math.max(0, this.speed);
 
         this.stateTimer -= dt * 1000;
         if (this.stateTimer <= 0 && this.speed === 0) {
             // Recover
             this.state = PlayerState.Cruising;
-            this.health = Math.min(this.health + 20, this.maxHealth); // Recover some health?
-            // Reset position to center? Or leave where wiped out? Leave is better.
-             this.x = 0; // Reset to center to avoid getting stuck in a loop of off-road wipeouts immediately?
-             // Or better, just make sure they are stopped.
+            this.health = Math.min(this.health + 20, this.maxHealth); // Recover some health
+            this.lean = 0;
         }
     }
 

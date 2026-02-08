@@ -14,6 +14,7 @@ export class Opponent {
     public speed: number = 0;
     public maxSpeed: number = 0;
     public state: OpponentState = OpponentState.Cruising;
+    public lean: number = 0; // -1 to 1
     public width: number = 0.5; // Visual width
     public normalizedWidth: number = 0.05;
 
@@ -36,16 +37,17 @@ export class Opponent {
         } else {
             this.aiLogic(dt, playerZ, playerX, playerSpeed, trackLength);
 
-            // Move
+            // Move Z
             this.z += this.speed * dt;
             if (this.z >= trackLength) this.z -= trackLength;
             if (this.z < 0) this.z += trackLength;
 
-            // Timers
+            // Update timers
             if (this.stateTimer > 0) {
                 this.stateTimer -= dt * 1000;
                 if (this.stateTimer <= 0) {
                     this.state = OpponentState.Cruising;
+                    this.lean = 0;
                     this.attackCooldown = 2000; // 2s cooldown
                 }
             }
@@ -64,11 +66,11 @@ export class Opponent {
         // Rubber-banding
         let targetSpeed = playerSpeed * (0.95 + Math.random() * 0.1); // Match player speed roughly
 
-        // Catch up or slow down
-        if (dist < -500) { // Behind
-            targetSpeed = playerSpeed + 1500;
-        } else if (dist > 500) { // Ahead
-            targetSpeed = playerSpeed * 0.8;
+        // Catch up or slow down drastically if too far
+        if (dist < -1000) { // Far behind
+            targetSpeed = playerSpeed + 2000;
+        } else if (dist > 1000) { // Far ahead
+            targetSpeed = playerSpeed * 0.6;
         }
 
         // Clamp target speed
@@ -80,25 +82,37 @@ export class Opponent {
         if (this.speed < targetSpeed) this.speed += accel;
         else if (this.speed > targetSpeed) this.speed -= accel;
 
-        // Steering
-        // Try to attack if close
+        // Steering logic
+        const steerSpeed = dt * 0.8;
+
+        // Attack behavior
         if (Math.abs(dist) < 500) {
              const steerDir = (playerX - this.x);
-             if (Math.abs(steerDir) > 0.05) {
-                 this.x += (steerDir > 0 ? 1 : -1) * dt * 0.5;
+
+             // If player is close, move towards them to block/attack
+             if (Math.abs(steerDir) > 0.1) {
+                 const dir = steerDir > 0 ? 1 : -1;
+                 this.x += dir * steerSpeed;
+                 this.lean = dir; // Lean into turn
+             } else {
+                 this.lean = 0;
              }
 
              // Attack Logic
-             if (Math.abs(dist) < 100 && Math.abs(steerDir) < 0.2 && this.state === OpponentState.Cruising && this.attackCooldown <= 0) {
-                 if (Math.random() < 0.02) { // Low chance per frame
+             if (Math.abs(dist) < 200 && Math.abs(steerDir) < 0.3 && this.state === OpponentState.Cruising && this.attackCooldown <= 0) {
+                 if (Math.random() < 0.05) { // Chance per frame
                      this.state = Math.random() > 0.5 ? OpponentState.Punching : OpponentState.Kicking;
                      this.stateTimer = 500;
+                     this.lean = 0; // Straighten up to attack?
                  }
              }
         } else {
-             // Center lane drift
+             // Center lane drift when alone
              if (Math.abs(this.x) > 0.1) {
-                 this.x += (this.x > 0 ? -1 : 1) * dt * 0.2;
+                 this.x += (this.x > 0 ? -1 : 1) * steerSpeed * 0.5;
+                 this.lean = (this.x > 0 ? -1 : 1) * 0.5;
+             } else {
+                 this.lean = 0;
              }
         }
 
@@ -114,6 +128,7 @@ export class Opponent {
         if (this.stateTimer <= 0 && this.speed === 0) {
             this.state = OpponentState.Cruising;
             this.speed = this.maxSpeed * 0.5;
+            this.lean = 0;
         }
     }
 

@@ -134,15 +134,24 @@ export class Road {
     }
 
     private addSprites() {
-        for (let n = 10; n < this.segments.length - 50; n += 5) { // Skip start and end
-            if (Math.random() > 0.6) {
+        for (let n = 10; n < this.segments.length - 50; n += 3) { // Skip start and end, more dense
+            // Trees - random sides
+            if (Math.random() > 0.3) {
                 const side = Math.random() > 0.5 ? 1 : -1;
-                const offset = side * (1.2 + Math.random() * 2); // Place randomly to the side
-                this.segments[n].sprites.push({ type: Math.random() > 0.5 ? SpriteType.TREE : SpriteType.SIGN, offset: offset });
+                const offset = side * (1.2 + Math.random() * 2.5); // Place randomly to the side
+                this.segments[n].sprites.push({ type: SpriteType.TREE, offset: offset });
             }
+
+            // Signs - closer to road
+            if (Math.random() > 0.8) {
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const offset = side * (1.1 + Math.random() * 0.5);
+                this.segments[n].sprites.push({ type: SpriteType.SIGN, offset: offset });
+            }
+
              // Occasionally place one on the road as an obstacle
-            if (Math.random() > 0.95) {
-                const offset = (Math.random() * 2 - 1) * 0.8; // On road (-0.8 to 0.8)
+            if (Math.random() > 0.98) {
+                const offset = (Math.random() * 2 - 1) * 0.7; // On road (-0.7 to 0.7)
                 this.segments[n].sprites.push({ type: SpriteType.SIGN, offset: offset });
             }
         }
