@@ -67,7 +67,7 @@ export class Renderer {
         p.screen.w = Math.round((p.screen.scale * roadWidth * width / 2));
     }
 
-    public render(road: Road, player: Player, cameraY: number, cameraZ: number, drawDistance: number, finished: boolean) {
+    public render(road: Road, player: Player, cameraY: number, cameraXOffset: number, cameraZ: number, drawDistance: number, finished: boolean) {
         // Initialize patterns once if needed
         if (!this.roadPatternLight && Assets.roadPatternLight) {
             this.roadPatternLight = this.ctx.createPattern(Assets.roadPatternLight, 'repeat');
@@ -171,48 +171,56 @@ export class Renderer {
             }
         }
 
-        // Draw Player
-        this.renderPlayer(this.width, this.height, this.width / 2, this.height - 20, 0.5, player);
+        // Draw Player (with slight bob/vibration)
+        const bounce = (Math.sin(Date.now() / 50) * 2) * (player.speed / player.maxSpeed);
+        this.renderPlayer(this.width, this.height, this.width / 2 + cameraXOffset, this.height - 20 + bounce, 0.5, player);
 
         // Draw HUD
         this.renderHUD(player, finished);
     }
 
     private renderHUD(player: Player, finished: boolean) {
-        // Retro HUD
+        // Retro HUD - Minimalist
         this.ctx.save();
 
-        // Speedometer bg
-        this.ctx.fillStyle = '#222';
-        this.ctx.strokeStyle = '#eee';
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        this.ctx.arc(60, this.height - 60, 50, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.stroke();
+        // Jitter speed text slightly at high speed
+        let jitterX = 0;
+        let jitterY = 0;
+        if (player.speed > player.maxSpeed * 0.8) {
+             jitterX = (Math.random() - 0.5) * 2;
+             jitterY = (Math.random() - 0.5) * 2;
+        }
 
-        // Speed Text
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 24px monospace';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
+        // Speed
+        this.ctx.fillStyle = '#FFD700'; // Gold/Yellow
+        this.ctx.font = 'bold italic 40px monospace';
+        this.ctx.textAlign = 'right';
+        this.ctx.textBaseline = 'bottom';
         const speedKmh = Math.floor(player.speed / 100);
-        this.ctx.fillText(`${speedKmh}`, 60, this.height - 60);
-        this.ctx.font = '12px monospace';
-        this.ctx.fillText(`KM/H`, 60, this.height - 40);
+        this.ctx.shadowColor = 'black';
+        this.ctx.shadowOffsetX = 2;
+        this.ctx.shadowOffsetY = 2;
+        this.ctx.fillText(`${speedKmh}`, this.width - 20 + jitterX, this.height - 20 + jitterY);
 
-        // Health Bar
-        this.ctx.fillStyle = '#222';
-        this.ctx.fillRect(120, this.height - 40, 200, 20);
-        this.ctx.fillStyle = '#d32f2f'; // Red
+        this.ctx.font = '20px monospace';
+        this.ctx.fillText(`KM/H`, this.width - 20, this.height - 60);
+
+        // Health Bar (Simple bar at bottom left)
         const healthPct = Math.max(0, player.health / player.maxHealth);
-        this.ctx.fillRect(122, this.height - 38, 196 * healthPct, 16);
-        this.ctx.strokeStyle = '#eee';
-        this.ctx.strokeRect(120, this.height - 40, 200, 20);
-        this.ctx.fillStyle = '#fff';
+        this.ctx.fillStyle = '#000';
+        this.ctx.fillRect(20, this.height - 30, 150, 10); // BG
+
+        this.ctx.fillStyle = healthPct > 0.5 ? '#00FF00' : (healthPct > 0.2 ? '#FFFF00' : '#FF0000');
+        this.ctx.fillRect(20, this.height - 30, 150 * healthPct, 10); // FG
+
+        this.ctx.strokeStyle = '#FFF';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(20, this.height - 30, 150, 10);
+
+        this.ctx.fillStyle = '#FFF';
         this.ctx.font = 'bold 14px monospace';
         this.ctx.textAlign = 'left';
-        this.ctx.fillText("BIKE", 125, this.height - 45);
+        this.ctx.fillText("CONDITION", 20, this.height - 35);
 
         // Finish overlay
         if (finished) {

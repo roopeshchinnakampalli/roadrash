@@ -180,63 +180,74 @@ export class Assets {
 
     private static generateRider(color: string, lean: number): HTMLCanvasElement {
         // lean: -1 (left), 0 (straight), 1 (right)
-        // Back View
+        // Back View with Aggressive Posture
         const { canvas, ctx } = this.createContext(128, 128);
         const cx = 64;
         const cy = 110;
 
-        // Bike Wheels (Rear tire)
+        // Bike Wheels (Rear tire) - Slightly flatter
         ctx.fillStyle = '#111';
-        ctx.fillRect(cx - 12 + lean * 10, cy - 20, 24, 20); // Thick tire
+        ctx.fillRect(cx - 14 + lean * 12, cy - 15, 28, 15); // Wide tire
 
-        // Bike Body (Rear fender/exhaust)
-        ctx.fillStyle = '#333';
-        ctx.fillRect(cx - 15 + lean * 10, cy - 50, 30, 30); // Body block
+        // Bike Body (Rear fender/exhaust) - Compact
+        ctx.fillStyle = '#222';
+        ctx.fillRect(cx - 18 + lean * 12, cy - 45, 36, 30);
 
-        // Exhaust pipes
-        ctx.fillStyle = '#999';
-        ctx.fillRect(cx + 15 + lean * 10, cy - 30, 8, 20); // Right pipe
+        // Exhaust pipes - Dual
+        ctx.fillStyle = '#AAA';
+        ctx.fillRect(cx + 18 + lean * 12, cy - 25, 6, 15); // Right pipe
+        ctx.fillRect(cx - 24 + lean * 12, cy - 25, 6, 15); // Left pipe
 
-        // Rider Legs
+        // Rider Legs - Tucked in
         ctx.fillStyle = '#1a237e'; // Jeans
         ctx.beginPath();
-        ctx.moveTo(cx - 10 + lean * 5, cy - 50);
-        ctx.lineTo(cx - 20 + lean * 15, cy - 20); // Left leg down
-        ctx.lineTo(cx - 5 + lean * 5, cy - 50);
+        ctx.moveTo(cx - 12 + lean * 8, cy - 45);
+        ctx.lineTo(cx - 22 + lean * 18, cy - 25); // Left leg angled out slightly
+        ctx.lineTo(cx - 8 + lean * 8, cy - 45);
         ctx.fill();
 
         ctx.beginPath();
-        ctx.moveTo(cx + 10 + lean * 5, cy - 50);
-        ctx.lineTo(cx + 20 + lean * 15, cy - 20); // Right leg down
-        ctx.lineTo(cx + 5 + lean * 5, cy - 50);
+        ctx.moveTo(cx + 12 + lean * 8, cy - 45);
+        ctx.lineTo(cx + 22 + lean * 18, cy - 25); // Right leg angled out slightly
+        ctx.lineTo(cx + 8 + lean * 8, cy - 45);
         ctx.fill();
 
-        // Rider Back (Jacket)
+        // Rider Back (Jacket) - Leaning Forward (Lower profile)
         ctx.fillStyle = color; // Shirt
-        ctx.fillRect(cx - 15 + lean * 10, cy - 90, 30, 40); // Back
-
-        // Arms (Elbows out)
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = color;
+        // Shoulders are lower, creating "hunch"
         ctx.beginPath();
-        ctx.moveTo(cx - 15 + lean * 10, cy - 85);
-        ctx.lineTo(cx - 35 + lean * 15, cy - 65); // Left elbow
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(cx + 15 + lean * 10, cy - 85);
-        ctx.lineTo(cx + 35 + lean * 15, cy - 65); // Right elbow
-        ctx.stroke();
-
-        // Head (Helmet Back)
-        ctx.fillStyle = '#333';
-        ctx.beginPath();
-        ctx.arc(cx + lean * 15, cy - 100, 12, 0, Math.PI*2);
+        ctx.moveTo(cx - 20 + lean * 12, cy - 75); // Left shoulder
+        ctx.lineTo(cx + 20 + lean * 12, cy - 75); // Right shoulder
+        ctx.lineTo(cx + 10 + lean * 8, cy - 45); // Waist right
+        ctx.lineTo(cx - 10 + lean * 8, cy - 45); // Waist left
         ctx.fill();
 
-        // Helmet Detail
-        ctx.fillStyle = '#555';
-        ctx.fillRect(cx + lean * 15 - 5, cy - 100, 10, 5);
+        // Arms - Tucked In (Elbows closer to body)
+        ctx.lineWidth = 7;
+        ctx.strokeStyle = color;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx - 18 + lean * 12, cy - 70); // Left shoulder
+        ctx.lineTo(cx - 28 + lean * 15, cy - 55); // Left elbow tucked
+        ctx.lineTo(cx - 22 + lean * 12, cy - 40); // Hand (hidden near handle)
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx + 18 + lean * 12, cy - 70); // Right shoulder
+        ctx.lineTo(cx + 28 + lean * 15, cy - 55); // Right elbow tucked
+        ctx.lineTo(cx + 22 + lean * 12, cy - 40); // Hand
+        ctx.stroke();
+
+        // Head (Helmet Back) - Tucked Low
+        ctx.fillStyle = '#222';
+        // Position head lower to simulate forward lean
+        ctx.beginPath();
+        ctx.arc(cx + lean * 15, cy - 80, 11, 0, Math.PI*2);
+        ctx.fill();
+
+        // Helmet Detail (Neck protector / back of helmet)
+        ctx.fillStyle = '#444';
+        ctx.fillRect(cx + lean * 15 - 6, cy - 80, 12, 4);
 
         return canvas;
     }

@@ -72,6 +72,12 @@ export class Game {
         if (this.cameraShake > 0) this.cameraShake -= dt * 1000; // Linear decay
         if (this.cameraShake < 0) this.cameraShake = 0;
 
+        // High Speed Vibration
+        const speedRatio = this.player.speed / this.maxSpeed;
+        if (speedRatio > 0.8) {
+            this.cameraShake += (speedRatio - 0.8) * 2; // Slight buzz at high speed
+        }
+
         // Reset riders in segments
         this.road.clearRiders();
 
@@ -164,7 +170,8 @@ export class Game {
         }
 
         const shake = this.cameraShake * (Math.random() * 2 - 1);
-        this.renderer.render(this.road, this.player, CAMERA_HEIGHT + this.road.getSegment(this.position).p1.world.y + shake, this.position, DRAW_DISTANCE, this.finished);
+        const shakeX = (this.cameraShake * 0.5) * (Math.random() * 2 - 1); // Also shake X slightly
+        this.renderer.render(this.road, this.player, CAMERA_HEIGHT + this.road.getSegment(this.position).p1.world.y + shake, shakeX, this.position, DRAW_DISTANCE, this.finished);
 
         requestAnimationFrame(this.loop);
     }

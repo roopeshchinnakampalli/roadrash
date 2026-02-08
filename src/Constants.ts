@@ -12,11 +12,11 @@ export const CAMERA_DEPTH = 1 / Math.tan((FIELD_OF_VIEW / 2) * Math.PI / 180);
 export const PLAYER_Z = CAMERA_HEIGHT * CAMERA_DEPTH;
 
 export const COLORS = {
-    SKY: '#72D7EE',
+    SKY: '#87CEEB',
     TREE: '#005108',
     FOG: '#005108',
-    LIGHT: { road: '#707070', grass: '#32CD32', rumble: '#555555', lane: '#CCCCCC' }, // Lighter road, vibrant grass
-    DARK: { road: '#696969', grass: '#228B22', rumble: '#BBBBBB' }, // Darker grass
+    LIGHT: { road: '#787878', grass: '#4CAF50', rumble: '#B71C1C', lane: '#CCCCCC' }, // Slightly lighter road, nice grass, red rumble
+    DARK: { road: '#686868', grass: '#388E3C', rumble: '#F4F4F4' }, // Darker road, darker grass, white rumble (alternating)
     START: { road: 'white', grass: 'white', rumble: 'white' },
     FINISH: { road: 'black', grass: 'black', rumble: 'black' }
 };

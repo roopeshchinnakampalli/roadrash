@@ -134,25 +134,28 @@ export class Road {
     }
 
     private addSprites() {
-        for (let n = 10; n < this.segments.length - 50; n += 3) { // Skip start and end, more dense
-            // Trees - random sides
-            if (Math.random() > 0.3) {
-                const side = Math.random() > 0.5 ? 1 : -1;
-                const offset = side * (1.2 + Math.random() * 2.5); // Place randomly to the side
+        for (let n = 10; n < this.segments.length - 50; n += 1) { // Very dense to create speed sense
+            const curve = this.segments[n].curve;
+
+            // Trees - Dense, lining the road
+            if (n % 2 === 0) { // Every other segment
+                const side = n % 4 === 0 ? 1 : -1; // Alternate sides
+                const offset = side * (1.5 + Math.random() * 3.0);
                 this.segments[n].sprites.push({ type: SpriteType.TREE, offset: offset });
             }
 
-            // Signs - closer to road
-            if (Math.random() > 0.8) {
-                const side = Math.random() > 0.5 ? 1 : -1;
-                const offset = side * (1.1 + Math.random() * 0.5);
-                this.segments[n].sprites.push({ type: SpriteType.SIGN, offset: offset });
+            // Signs - On curves or hills
+            if (Math.abs(curve) > 1 && n % 5 === 0) {
+                 const side = curve > 0 ? -1 : 1; // Arrows pointing turn direction usually on outside? Or inside? Let's just put on side.
+                 const offset = side * 1.3;
+                 this.segments[n].sprites.push({ type: SpriteType.SIGN, offset: offset });
             }
 
-             // Occasionally place one on the road as an obstacle
-            if (Math.random() > 0.98) {
-                const offset = (Math.random() * 2 - 1) * 0.7; // On road (-0.7 to 0.7)
-                this.segments[n].sprites.push({ type: SpriteType.SIGN, offset: offset });
+            // Random clutter
+            if (Math.random() > 0.9) {
+                 const side = Math.random() > 0.5 ? 1 : -1;
+                 const offset = side * (2.0 + Math.random() * 5.0);
+                 this.segments[n].sprites.push({ type: SpriteType.TREE, offset: offset });
             }
         }
     }
