@@ -3,6 +3,7 @@ import { Input } from './Input';
 import { Renderer } from './Renderer';
 import { Player, PlayerState } from './Player';
 import { Opponent, OpponentState } from './Opponent';
+import { Assets } from './Assets';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, FPS, STEP, CAMERA_HEIGHT, CAMERA_DEPTH, PLAYER_Z, SEGMENT_LENGTH, DRAW_DISTANCE } from './Constants';
 
 export class Game {
@@ -21,11 +22,14 @@ export class Game {
     private maxSpeed: number = SEGMENT_LENGTH / STEP;
     private trackLength: number = 0;
     private finished: boolean = false;
+    private cameraShake: number = 0;
 
     constructor() {
         this.canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
         this.canvas.width = SCREEN_WIDTH;
         this.canvas.height = SCREEN_HEIGHT;
+
+        Assets.init();
 
         this.road = new Road();
         this.trackLength = this.road.segments.length * SEGMENT_LENGTH;
@@ -64,6 +68,16 @@ export class Game {
         while (this.position >= this.trackLength) this.position -= this.trackLength;
         while (this.position < 0) this.position += this.trackLength;
 
+        // Camera Shake Decay
+        if (this.cameraShake > 0) this.cameraShake -= dt * 1000; // Linear decay
+        if (this.cameraShake < 0) this.cameraShake = 0;
+
+        // High Speed Vibration
+        const speedRatio = this.player.speed / this.maxSpeed;
+        if (speedRatio > 0.8) {
+            this.cameraShake += (speedRatio - 0.8) * 2; // Slight buzz at high speed
+        }
+
         // Reset riders in segments
         this.road.clearRiders();
 
@@ -94,15 +108,19 @@ export class Game {
                           this.player.takeDamage(10);
                           const dir = (this.player.x - opponent.x) > 0 ? 1 : -1;
                           this.player.x += dir * 0.1;
+                          this.cameraShake = 10;
                       } else if (this.player.state === PlayerState.Punching || this.player.state === PlayerState.Kicking) {
                           opponent.triggerWipeOut();
+                          this.cameraShake = 5;
                       } else {
+                          // Bump
                           const dir = (this.player.x - opponent.x) > 0 ? 1 : -1;
                           const push = dt * 1.0;
                           this.player.x += dir * push;
                           opponent.x -= dir * push;
                           this.player.speed *= 0.99;
                           opponent.speed *= 0.99;
+                          this.cameraShake = 2;
                       }
                  }
             }
@@ -121,8 +139,10 @@ export class Game {
             if (this.overlap(this.player.x, playerW, sprite.offset, spriteW)) {
                 if (this.player.speed > 500) {
                      this.player.triggerWipeOut();
+                     this.cameraShake = 30;
                 } else {
                      this.player.speed = 0;
+                     this.cameraShake = 5;
                 }
             }
         }
@@ -149,7 +169,9 @@ export class Game {
             this.update(STEP);
         }
 
-        this.renderer.render(this.road, this.player, CAMERA_HEIGHT + this.road.getSegment(this.position).p1.world.y, this.position, DRAW_DISTANCE, this.finished);
+        const shake = this.cameraShake * (Math.random() * 2 - 1);
+        const shakeX = (this.cameraShake * 0.5) * (Math.random() * 2 - 1); // Also shake X slightly
+        this.renderer.render(this.road, this.player, CAMERA_HEIGHT + this.road.getSegment(this.position).p1.world.y + shake, shakeX, this.position, DRAW_DISTANCE, this.finished);
 
         requestAnimationFrame(this.loop);
     }

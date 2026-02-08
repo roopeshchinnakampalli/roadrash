@@ -134,16 +134,35 @@ export class Road {
     }
 
     private addSprites() {
-        for (let n = 10; n < this.segments.length - 50; n += 5) { // Skip start and end
-            if (Math.random() > 0.6) {
-                const side = Math.random() > 0.5 ? 1 : -1;
-                const offset = side * (1.2 + Math.random() * 2); // Place randomly to the side
-                this.segments[n].sprites.push({ type: Math.random() > 0.5 ? SpriteType.TREE : SpriteType.SIGN, offset: offset });
+        for (let n = 10; n < this.segments.length - 50; n += 1) { // Very dense to create speed sense
+            const curve = this.segments[n].curve;
+
+            // Trees - Dense, lining the road
+            if (n % 2 === 0) { // Every other segment
+                const side = n % 4 === 0 ? 1 : -1; // Alternate sides
+                const offset = side * (2.0 + Math.random() * 3.0);
+                this.segments[n].sprites.push({ type: SpriteType.TREE, offset: offset });
             }
-             // Occasionally place one on the road as an obstacle
-            if (Math.random() > 0.95) {
-                const offset = (Math.random() * 2 - 1) * 0.8; // On road (-0.8 to 0.8)
-                this.segments[n].sprites.push({ type: SpriteType.SIGN, offset: offset });
+
+            // Poles - Regular intervals, very close to road
+            if (n % 3 === 0) {
+                 const side = -1; // Always left for utility lines? or alternate? Let's keep left.
+                 const offset = side * 1.1; // Close to road
+                 this.segments[n].sprites.push({ type: SpriteType.POLE, offset: offset });
+            }
+
+            // Signs - On curves or hills
+            if (Math.abs(curve) > 1 && n % 10 === 0) {
+                 const side = curve > 0 ? -1 : 1;
+                 const offset = side * 1.3;
+                 this.segments[n].sprites.push({ type: SpriteType.SIGN, offset: offset });
+            }
+
+            // Bushes - Random low clutter
+            if (Math.random() > 0.8) {
+                 const side = Math.random() > 0.5 ? 1 : -1;
+                 const offset = side * (1.3 + Math.random());
+                 this.segments[n].sprites.push({ type: SpriteType.BUSH, offset: offset });
             }
         }
     }
