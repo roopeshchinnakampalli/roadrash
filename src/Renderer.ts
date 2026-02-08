@@ -344,7 +344,7 @@ export class Renderer {
              else if (player.lean > 0.1) asset = Assets.playerRight;
         }
 
-        const scale = 3; // HUD scale
+        const scale = 1.8; // Reduced scale to keep view clear (was 3)
         const w = asset.width * scale;
         const h = asset.height * scale;
 
